@@ -55,4 +55,39 @@ class CliArgumentsParserTest {
         assertEquals(CliMode.EXPLICIT_FILES, args.mode());
         assertEquals(List.of("src/main/java/demo/A.java"), args.fileArgs());
     }
+
+    @Test
+    void noTestCommandByDefault() {
+        CliArguments args = CliArgumentsParser.parse(new String[]{});
+        assertEquals(null, args.testCommand());
+    }
+
+    @Test
+    void testCommandFlagCapturesItsValue() {
+        CliArguments args = CliArgumentsParser.parse(
+                new String[]{"--test-command", "scripts/run-unit-tests.sh"});
+
+        assertEquals("scripts/run-unit-tests.sh", args.testCommand());
+        assertEquals(CliMode.ALL_SRC, args.mode());
+    }
+
+    @Test
+    void testCommandCanCombineWithChangedAndExplicitFiles() {
+        CliArguments changed = CliArgumentsParser.parse(
+                new String[]{"--changed", "--test-command", "scripts/run-unit-tests.sh"});
+        assertEquals(CliMode.CHANGED_SRC, changed.mode());
+        assertEquals("scripts/run-unit-tests.sh", changed.testCommand());
+
+        CliArguments explicit = CliArgumentsParser.parse(
+                new String[]{"src/main/java/demo/A.java", "--test-command", "scripts/run-unit-tests.sh"});
+        assertEquals(CliMode.EXPLICIT_FILES, explicit.mode());
+        assertEquals(List.of("src/main/java/demo/A.java"), explicit.fileArgs());
+        assertEquals("scripts/run-unit-tests.sh", explicit.testCommand());
+    }
+
+    @Test
+    void testCommandRequiresAValue() {
+        assertThrows(IllegalArgumentException.class,
+                () -> CliArgumentsParser.parse(new String[]{"--test-command"}));
+    }
 }

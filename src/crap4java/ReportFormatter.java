@@ -3,6 +3,7 @@ package crap4java;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 final class ReportFormatter {
 
@@ -15,7 +16,7 @@ final class ReportFormatter {
                 .comparing((MethodMetrics e) -> e.crapScore() == null)
                 .thenComparing(e -> e.crapScore() == null ? 0.0 : -e.crapScore()));
 
-        String header = String.format("%-30s %-35s %4s %7s %8s", "Method", "Class", "CC", "Cov%", "CRAP");
+        String header = String.format(Locale.ROOT, "%-30s %-35s %4s %7s %8s", "Method", "Class", "CC", "Cov%", "CRAP");
         String separator = "-".repeat(header.length());
         StringBuilder builder = new StringBuilder();
         builder.append("CRAP Report\n");
@@ -24,7 +25,7 @@ final class ReportFormatter {
         builder.append(separator).append('\n');
 
         for (MethodMetrics entry : sorted) {
-            builder.append(String.format("%-30s %-35s %4d %7s %8s%n",
+            builder.append(String.format(Locale.ROOT, "%-30s %-35s %4d %7s %8s%n",
                     entry.methodName(),
                     entry.className(),
                     entry.complexity(),
@@ -39,14 +40,14 @@ final class ReportFormatter {
         if (coverage == null) {
             return "  N/A ";
         }
-        return String.format("%5.1f%%", coverage);
+        return String.format(Locale.ROOT, "%5.1f%%", coverage);
     }
 
     private static String formatCrap(Double score) {
         if (score == null) {
             return "     N/A";
         }
-        return String.format("%8.1f", score);
+        return String.format(Locale.ROOT, "%8.1f", score);
     }
 }
 

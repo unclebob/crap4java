@@ -80,6 +80,14 @@ The tool shall exit with usage error when argument parsing fails.
 
 The tool shall print usage text on CLI usage failure.
 
+### 4.4 Test Command Override
+
+The tool shall support an optional `--test-command <cmd>` flag, combinable with any form in §4.1 except `--help`.
+
+When present, `<cmd>` replaces the test-execution step described in §7.2 as the mechanism that exercises the module's tests. Coverage instrumentation and JaCoCo report generation remain Maven-based; only test execution itself is substituted. This exists for projects whose tests are not run through `mvn test` (see §7.2.1).
+
+`--test-command` shall require a value; omitting one is a usage error per §4.3.
+
 ## 5. File Selection Rules
 
 ### 5.1 Default Source Discovery
@@ -145,6 +153,16 @@ Before coverage generation, the tool shall delete stale module-local coverage ar
 ### 7.2 Maven Coverage Command
 
 Coverage generation shall invoke Maven against the module root and generate JaCoCo XML for that module.
+
+#### 7.2.1 Overridden Test Command
+
+When `--test-command` (§4.4) is supplied, the tool shall:
+
+1. resolve the JaCoCo runtime agent jar for the module (caching it under the module's `target/` so repeated runs do not re-resolve it)
+2. run `<cmd>` with the JaCoCo agent attached via the `JAVA_TOOL_OPTIONS` environment variable, so any JVM `<cmd>` launches contributes coverage
+3. invoke Maven's JaCoCo report goal against the module root to produce the JaCoCo XML report
+
+A non-zero exit from `<cmd>` shall fail the run per §14 before the report goal runs.
 
 ### 7.3 Missing Coverage XML
 

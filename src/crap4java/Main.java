@@ -32,6 +32,14 @@ public final class Main {
                   crap4java --changed  Analyze changed Java files under src/
                   crap4java <path...>  Analyze files, or for directory args analyze <dir>/src/**/*.java
                   crap4java --help     Print this help message
+
+                Options:
+                  --test-command CMD   Run CMD instead of the default `mvn test` coverage
+                                        command, for projects that don't run tests through
+                                        Maven. CMD runs with the JaCoCo agent attached via
+                                        JAVA_TOOL_OPTIONS, so any JVM it launches (including
+                                        a custom test runner) still contributes coverage;
+                                        CMD's exit code determines pass/fail.
                 """;
     }
 

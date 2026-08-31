@@ -23,6 +23,15 @@ For each invocation:
 3. Read `target/site/jacoco/jacoco.xml`
 4. Analyze selected Java files
 
+### Projects That Don't Run Tests Through Maven
+
+Pass `--test-command <cmd>` to run `<cmd>` instead of step 2's `mvn ... test`. This
+is for projects whose tests aren't run via `mvn test` (a dedicated test runner
+invoked directly with `java`, for example). `crap4java` still resolves and attaches
+the JaCoCo runtime agent to `<cmd>` via `JAVA_TOOL_OPTIONS` (so any JVM it launches
+contributes real coverage, not just an `mvn test`-driven one), then runs the JaCoCo
+`report` goal afterward. `<cmd>`'s exit code still determines pass/fail.
+
 ## Build and Test
 
 ```bash
@@ -51,6 +60,7 @@ java -jar target/crap4java-0.1.0-SNAPSHOT.jar
 --changed             Analyze changed Java files under src/
 <file ...>            Analyze only these files
 <directory ...>       Analyze all Java files under each directory's src/ subtree
+--test-command CMD    Run CMD instead of `mvn test` (combinable with the forms above)
 ```
 
 Examples:
@@ -61,6 +71,7 @@ java -jar target/crap4java-0.1.0-SNAPSHOT.jar
 java -jar target/crap4java-0.1.0-SNAPSHOT.jar --changed
 java -jar target/crap4java-0.1.0-SNAPSHOT.jar src/main/java/demo/Sample.java
 java -jar target/crap4java-0.1.0-SNAPSHOT.jar module-a module-b
+java -jar target/crap4java-0.1.0-SNAPSHOT.jar --test-command "scripts/run-unit-tests.sh"
 ```
 
 ## Exit codes

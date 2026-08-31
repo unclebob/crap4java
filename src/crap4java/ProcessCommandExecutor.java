@@ -2,16 +2,26 @@ package crap4java;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 final class ProcessCommandExecutor implements CommandExecutor {
 
     @Override
     public int run(List<String> command, Path directory) throws Exception {
-        Process process = new ProcessBuilder(command)
+        return start(command, directory, Map.of()).waitFor();
+    }
+
+    @Override
+    public int runShell(String commandText, Path directory, Map<String, String> extraEnv) throws Exception {
+        return start(List.of("/bin/sh", "-lc", commandText), directory, extraEnv).waitFor();
+    }
+
+    private Process start(List<String> command, Path directory, Map<String, String> extraEnv) throws Exception {
+        ProcessBuilder builder = new ProcessBuilder(command)
                 .directory(directory.toFile())
-                .inheritIO()
-                .start();
-        return process.waitFor();
+                .inheritIO();
+        builder.environment().putAll(extraEnv);
+        return builder.start();
     }
 }
 

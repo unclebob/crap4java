@@ -2,9 +2,18 @@ package crap4java;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 interface CommandExecutor {
     int run(List<String> command, Path directory) throws Exception;
+
+    default int runShell(String commandText, Path directory) throws Exception {
+        return runShell(commandText, directory, Map.of());
+    }
+
+    default int runShell(String commandText, Path directory, Map<String, String> extraEnv) throws Exception {
+        return run(List.of("/bin/sh", "-lc", commandText), directory);
+    }
 }
 
 /* mutate4java-manifest

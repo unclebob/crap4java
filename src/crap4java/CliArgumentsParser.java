@@ -8,22 +8,53 @@ final class CliArgumentsParser {
     private CliArgumentsParser() {
     }
 
-    static CliArguments parse(String[] args) {
-        if (args.length == 0) {
-            return new CliArguments(CliMode.ALL_SRC, List.of());
+    static CliArguments parse(String[] rawArgs) {
+        if (rawArgs.length == 0) {
+            return new CliArguments(CliMode.ALL_SRC, List.of(), null);
         }
 
-        if (containsFlag(args, "--help")) {
-            return new CliArguments(CliMode.HELP, List.of());
+        if (containsFlag(rawArgs, "--help")) {
+            return new CliArguments(CliMode.HELP, List.of(), null);
+        }
+
+        String testCommand = extractTestCommand(rawArgs);
+        String[] args = withoutTestCommand(rawArgs);
+
+        if (args.length == 0) {
+            return new CliArguments(CliMode.ALL_SRC, List.of(), testCommand);
         }
 
         boolean changed = containsFlag(args, "--changed");
         List<String> values = nonFlagArgs(args);
         ensureChangedIsNotCombined(changed, values);
         if (changed) {
-            return new CliArguments(CliMode.CHANGED_SRC, List.of());
+            return new CliArguments(CliMode.CHANGED_SRC, List.of(), testCommand);
         }
-        return new CliArguments(CliMode.EXPLICIT_FILES, List.copyOf(values));
+        return new CliArguments(CliMode.EXPLICIT_FILES, List.copyOf(values), testCommand);
+    }
+
+    private static String extractTestCommand(String[] args) {
+        for (int i = 0; i < args.length; i++) {
+            if ("--test-command".equals(args[i])) {
+                if (i + 1 >= args.length) {
+                    throw new IllegalArgumentException("--test-command requires a value");
+                }
+                return args[i + 1];
+            }
+        }
+        return null;
+    }
+
+    private static String[] withoutTestCommand(String[] args) {
+        List<String> remaining = new ArrayList<>();
+        for (int i = 0; i < args.length; i++) {
+            if ("--test-command".equals(args[i])) {
+                i++;
+                continue;
+            }
+            remaining.add(args[i]);
+        }
+        return remaining.toArray(new String[0]);
     }
 
     private static boolean containsFlag(String[] args, String flag) {

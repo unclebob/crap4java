@@ -5,8 +5,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 final class CoverageRunner {
+
+    private static final String JACOCO_VERSION = "0.8.12";
 
     private final CommandExecutor executor;
 
@@ -14,18 +17,58 @@ final class CoverageRunner {
         this.executor = executor;
     }
 
-    void generateCoverage(Path projectRoot) throws Exception {
+    void generateCoverage(Path projectRoot, String testCommand) throws Exception {
         deleteIfExists(projectRoot.resolve("target/site/jacoco"));
         deleteIfExists(projectRoot.resolve("target/jacoco.exec"));
 
-        int exit = executor.run(List.of(
-                "mvn", "-q",
-                "org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent",
-                "test",
-                "org.jacoco:jacoco-maven-plugin:0.8.12:report"
-        ), projectRoot);
+        if (testCommand == null) {
+            run(List.of(
+                    "mvn", "-q",
+                    "org.jacoco:jacoco-maven-plugin:" + JACOCO_VERSION + ":prepare-agent",
+                    "test",
+                    "org.jacoco:jacoco-maven-plugin:" + JACOCO_VERSION + ":report"
+            ), projectRoot, "Coverage command failed with exit ");
+            return;
+        }
+
+        runWithCustomTestCommand(projectRoot, testCommand);
+    }
+
+    private void runWithCustomTestCommand(Path projectRoot, String testCommand) throws Exception {
+        Path agentJar = resolveJacocoAgentJar(projectRoot);
+        Path destFile = projectRoot.resolve("target/jacoco.exec").toAbsolutePath();
+        Map<String, String> env = Map.of("JAVA_TOOL_OPTIONS",
+                "-javaagent:" + agentJar + "=destfile=" + destFile + ",append=true");
+
+        int exit = executor.runShell(testCommand, projectRoot, env);
         if (exit != 0) {
             throw new IllegalStateException("Coverage command failed with exit " + exit);
+        }
+
+        run(List.of("mvn", "-q", "org.jacoco:jacoco-maven-plugin:" + JACOCO_VERSION + ":report"),
+                projectRoot, "Coverage report command failed with exit ");
+    }
+
+    private Path resolveJacocoAgentJar(Path projectRoot) throws Exception {
+        Path agentJar = projectRoot.resolve("target/jacoco-agent/org.jacoco.agent-runtime.jar");
+        if (Files.exists(agentJar)) {
+            return agentJar.toAbsolutePath();
+        }
+        run(List.of("mvn", "-q", "dependency:copy",
+                "-Dartifact=org.jacoco:org.jacoco.agent:" + JACOCO_VERSION + ":jar:runtime",
+                "-DoutputDirectory=target/jacoco-agent",
+                "-Dmdep.stripVersion=true"
+        ), projectRoot, "Unable to resolve the JaCoCo agent jar, exit ");
+        if (!Files.exists(agentJar)) {
+            throw new IllegalStateException("JaCoCo agent jar not found after resolution: " + agentJar);
+        }
+        return agentJar.toAbsolutePath();
+    }
+
+    private void run(List<String> command, Path directory, String failureMessage) throws Exception {
+        int exit = executor.run(command, directory);
+        if (exit != 0) {
+            throw new IllegalStateException(failureMessage + exit);
         }
     }
 

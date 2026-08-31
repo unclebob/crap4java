@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -37,25 +38,25 @@ final class CliApplication {
             return 0;
         }
 
-        List<MethodMetrics> metrics = analyzeByModule(filesToAnalyze);
+        List<MethodMetrics> metrics = analyzeByModule(filesToAnalyze, parsed.testCommand());
         metrics.sort(Comparator.comparing(MethodMetrics::crapScore,
                 Comparator.nullsLast(Comparator.reverseOrder())));
         out.print(ReportFormatter.format(metrics));
 
         double max = Main.maxCrap(metrics);
         if (thresholdExceeded(max)) {
-            err.printf("CRAP threshold exceeded: %.1f > 8.0%n", max);
+            err.printf(Locale.ROOT, "CRAP threshold exceeded: %.1f > 8.0%n", max);
             return 2;
         }
         return 0;
     }
 
-    private List<MethodMetrics> analyzeByModule(List<Path> filesToAnalyze) throws Exception {
+    private List<MethodMetrics> analyzeByModule(List<Path> filesToAnalyze, String testCommand) throws Exception {
         List<MethodMetrics> metrics = new ArrayList<>();
         for (Map.Entry<Path, List<Path>> entry : groupByModuleRoot(filesToAnalyze).entrySet()) {
             Path moduleRoot = entry.getKey();
             Path jacocoXml = moduleRoot.resolve("target/site/jacoco/jacoco.xml");
-            coverageRunner.generateCoverage(moduleRoot);
+            coverageRunner.generateCoverage(moduleRoot, testCommand);
             if (!Files.exists(jacocoXml)) {
                 err.println("Warning: JaCoCo XML not found at " + jacocoXml + ". Coverage will be N/A.");
             }
